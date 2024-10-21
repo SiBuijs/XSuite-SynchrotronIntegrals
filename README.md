@@ -1,6 +1,6 @@
 **Synchrotron Integrals**
 
-This class computes the synchrotron integrals for a given line object in XSuite and calculates associated physical quantities from these integrals.
+This class computes the synchrotron integrals for a given line object in XSuite and calculates associated physical quantities from these integrals. The class works for line objects with both thick and thin elements. The work is based on "Evaluation of Synchrotron Radiation Integrals" by R.H. Helm.
 
 
 **Initialization:**
