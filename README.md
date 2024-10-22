@@ -5,8 +5,8 @@ This class computes the synchrotron integrals for a given line object in XSuite 
 
 ## Initialization:
 - Pass a line object.
-- The class calculates the Twiss-Parameters of the line
-- The class extracts the required parameters from the line and the Twiss table
+- The class calculates the Twiss-Parameters of the line.
+- The class extracts the required parameters from the line and the Twiss table.
 
 
 ## Public methods:
