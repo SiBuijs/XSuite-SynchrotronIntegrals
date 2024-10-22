@@ -1,4 +1,4 @@
-# RadiationIntegral Class
+# SynchrotronIntegral Class
 # Works for both thick and thin elements
 # By Simon Fanica Buijsman
 # Date: 2024-09-24
