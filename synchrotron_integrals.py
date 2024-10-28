@@ -35,7 +35,7 @@ import numpy as np
 from scipy.constants import c as clight, hbar, electron_volt
 
 
-class RadiationIntegral:
+class SynchrotronIntegral:
 
     def __init__(self, line):
 
