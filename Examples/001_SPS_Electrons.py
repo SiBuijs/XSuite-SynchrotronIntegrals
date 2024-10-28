@@ -2,7 +2,7 @@ import xtrack as xt
 
 # NOTE: This is a test for the commit.
 
-from synchrotron_integrals import RadiationIntegral as radint
+from synchrotron_integrals import SynchrotronIntegral as synint
 
 line = xt.Line.from_json('line.json')
 line.particle_ref = xt.Particles(energy0=20e9, mass0=xt.ELECTRON_MASS_EV)
@@ -24,7 +24,7 @@ tw_rad = line.twiss(strengths=True, eneloss_and_damping=True)
 print(tw_rad.keys())
 
 # Compute radiation integrals
-Integrals = radint(line)
+Integrals = synint(line)
 
 # Momentum Compaction Factor
 # NOTE: CORRECT
