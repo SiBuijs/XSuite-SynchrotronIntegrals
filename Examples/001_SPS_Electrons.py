@@ -1,5 +1,7 @@
 import xtrack as xt
 
+# NOTE: This is a test for the commit.
+
 from synchrotron_integrals import RadiationIntegral as radint
 
 line = xt.Line.from_json('line.json')
