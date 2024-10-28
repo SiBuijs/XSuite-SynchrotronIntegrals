@@ -1,7 +1,5 @@
 import xtrack as xt
 
-print("Test to see if it works at all.")
-
 from ..synchrotron_integrals import SynchrotronIntegral as synint
 
 line = xt.Line.from_json('line.json')
