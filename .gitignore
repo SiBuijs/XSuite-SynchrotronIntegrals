@@ -35,3 +35,7 @@ env/
 # macOS and Linux system files
 .DS_Store
 *.swp
+
+# Don't commit test files
+test_*.py
+sps.seq
