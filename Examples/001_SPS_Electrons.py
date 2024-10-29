@@ -4,9 +4,9 @@
 
 import xtrack as xt
 
-from ..synchrotron_integrals import SynchrotronIntegral as synint
+from synchrotron_integrals import SynchrotronIntegral as synint
 
-line = xt.Line.from_json('line.json')
+line = xt.Line.from_json('001_sps.json')
 line.particle_ref = xt.Particles(energy0=20e9, mass0=xt.ELECTRON_MASS_EV)
 
 line.discard_tracker()

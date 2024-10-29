@@ -39,3 +39,5 @@ env/
 # Don't commit test files
 test_*.py
 sps.seq
+lhc_q20.str
+test_sps.json
