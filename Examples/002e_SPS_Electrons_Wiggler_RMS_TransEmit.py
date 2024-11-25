@@ -187,7 +187,6 @@ line.discard_tracker()
 # Plot momentum compaction
 # Create the plot
 RelErrs = plt.figure(figsize=(10, 6))
-varargs
 plt.plot(k0_values, RMS_beta_xRelEr90, label='RMS_beta_xRelEr90')
 plt.plot(k0_values, RMS_beta_xRelEr0, label='RMS_beta_xRelEr0')
 
