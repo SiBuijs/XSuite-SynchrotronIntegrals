@@ -33,6 +33,18 @@ import numpy as np
 from scipy.constants import c as clight, hbar, electron_volt
 
 
+#dict_keys(['name', 's', 'x', 'px', 'y', 'py', 'zeta', 'delta', 'ptau', 'W_matrix', 'kin_px', 'kin_py', 'kin_ps', 'kin_xprime', 'kin_yprime',
+#           'betx', 'bety', 'alfx', 'alfy', 'gamx', 'gamy', 'dx', 'dpx', 'dy', 'dpy', 'dx_zeta', 'dpx_zeta', 'dy_zeta', 'dpy_zeta', 'betx1', 
+#           'bety1', 'betx2', 'bety2', 'mux', 'muy', 'muzeta', 'nux', 'nuy', 'nuzeta', 'dzeta', 'only_markers', 'particle_on_co', 'circumference', 
+#           'orientation', 'R_matrix', 'steps_r_matrix', 'R_matrix_ebe', 'slip_factor', 'momentum_compaction_factor', 'bets0', 'T_rev0', 'gamma0', 
+#           'beta0', 'p0c', 'qx', 'qy', 'qs', 'c_minus', 'c_r1_avg', 'c_r2_avg', 'eigenvalues', 'rotation_matrix', 'dmux', 'dmuy', 'bx_chrom', 'by_chrom', 
+#           'ax_chrom', 'ay_chrom', 'wx_chrom', 'wy_chrom', 'ddx', 'ddpx', 'ddy', 'ddpy', 'dqx', 'dqy', 'ddqx', 'ddqy', 'eneloss_turn', 'damping_constants_turns', 
+#           'damping_constants_s', 'partition_numbers', 'eq_gemitt_x', 'eq_gemitt_y', 'eq_gemitt_zeta', 'eq_nemitt_x', 'eq_nemitt_y', 'eq_nemitt_zeta', 
+#           'dl_radiation', 'n_dot_delta_kick_sq_ave', 'values_at', 'k0l', 'k1l', 'k2l', 'k3l', 'k4l', 'k5l', 'k0sl', 'k1sl', 'k2sl', 'k3sl', 'k4sl', 'k5sl', 
+#           'angle_rad', 'rot_s_rad', 'hkick', 'vkick', 'ks', 'length', 'element_type', 'isthick', 'parent_name', 'method', 'radiation_method', 'reference_frame', 
+#           'line_config', '_action'])
+
+
 class SynchrotronIntegral:
 
     def __init__(self, line):
@@ -74,30 +86,53 @@ class SynchrotronIntegral:
     # Below are functions that calculate physical quantities that are later used in the integrals.
 
 
-    # This function calculates the bending angle in radians.
-    def _get_bend_angle_(self):
-            anglexy_values = np.zeros(shape=(2, len(self.length)))
+    # This function calculates the horizontal and vertical acceleration of the particle.
+    def _get_derivative_(self, yaxis, xaxis):
+            derivative_values = np.zeros(shape=(len(self.length)))
 
-            angle  = self.tw['k0l']
-            rot_s_rad = self.tw['rot_s_rad']
+            derivative_values     = np.gradient(yaxis, xaxis)
 
-            anglexy_values[0, :] = angle * np.cos(rot_s_rad)
-            anglexy_values[1, :] = angle * np.sin(rot_s_rad)
-                        
-            return anglexy_values
+            derivative_values[np.isnan(derivative_values)] = 0
             
+            return derivative_values
+            
+
+    def _orbit_curvature_(self):
+        h_xy = np.zeros(shape=(2, len(self.length)))
+        
+        angle_rad = self.tw['angle_rad']
+        rot_s_rad = self.tw['rot_s_rad']
+
+        h_xy[0, :] = np.sin(angle_rad) * np.cos(rot_s_rad)
+        h_xy[1, :] = np.sin(angle_rad) * np.sin(rot_s_rad)
+
+        return h_xy
+
 
    # Calculate the curvature of the design orbit.
     def _get_curvature_(self):
         k_xy = np.zeros(shape=(2, len(self.length)))
-        mask = self.length != 0
-        theta = self._get_bend_angle_()
 
-        k_xy[0, :][mask] = theta[0, :][mask]/self.length[mask]
-        k_xy[1, :][mask] = theta[1, :][mask]/self.length[mask]
+        h_xy = self._orbit_curvature_()
+        
+        vx = self._get_derivative_(self.tw['x'], self.tw['s'])
+        vy = self._get_derivative_(self.tw['y'], self.tw['s'])
+        vz = self._get_derivative_(self.tw['zeta'], self.tw['s'])
+
+        ax = self._get_derivative_(vx, self.tw['s'])
+        ay = self._get_derivative_(vy, self.tw['s'])
+        az = self._get_derivative_(vz, self.tw['s'])
+
+        mask1 = vx**2 + vz**2 != 0
+        mask2 = vy**2 + vz**2 != 0
+
+        k_xy[0, :][mask1] = np.abs(vz * ay - vy * az)[mask1] / (clight**2 * (vx**2 + vz**2 + vy**2))[mask1]**(3/2)
+        k_xy[1, :][mask2] = np.abs(vz * ax - vx * az)[mask2] / (clight**2 * (vy**2 + vz**2 + vx**2))[mask2]**(3/2)
+
+        k_xy[0, :] -= h_xy[0, :]
+        k_xy[1, :] -= h_xy[1, :]
 
         return k_xy
-
 
     # For the field index
     def _get_fieldindex_(self):
@@ -144,8 +179,8 @@ class SynchrotronIntegral:
     def _integrand1_(self):
         I1xy_values = np.zeros(shape=(2, len(self.length)))
 
-        I1xy_values[0, :] = self._get_bend_angle_()[0, :] * self.dx
-        I1xy_values[1, :] = self._get_bend_angle_()[1, :] * self.dy
+        I1xy_values[0, :] = self.kx * self.length * self.dx
+        I1xy_values[1, :] = self.ky * self.length * self.dy
 
         return I1xy_values
         
