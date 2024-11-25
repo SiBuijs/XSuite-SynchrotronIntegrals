@@ -141,7 +141,7 @@ class SynchrotronIntegral:
     # Units: [m]
     # Returns an array of shape (2, number of elements)
     # The two rows correspond to the x- and y-values respectively.
-    def _Integrand1_(self):
+    def _integrand1_(self):
         I1xy_values = np.zeros(shape=(2, len(self.length)))
 
         I1xy_values[0, :] = self._get_bend_angle_()[0, :] * self.dx
@@ -152,7 +152,7 @@ class SynchrotronIntegral:
     
     # Integrand 2
     # Units: [m⁻¹]
-    def _Integrand2_(self):
+    def _integrand2_(self):
         I2xy_values = np.zeros(shape=(2, len(self.length)))
 
         I2xy_values[0, :] = self.length * self.kx**2
@@ -163,7 +163,7 @@ class SynchrotronIntegral:
 
     # Integrand 3
     # Units: [m⁻²]
-    def _Integrand3_(self):
+    def _integrand3_(self):
         I3xy_values = np.zeros(shape=(2, len(self.length)))
 
         I3xy_values[0, :] = self.length * np.abs(self.kx)**3
@@ -176,7 +176,7 @@ class SynchrotronIntegral:
     # Units: [m⁻¹]
     # Returns an array of shape (2, number of elements)
     # The two rows correspond to the x- and y-values respectively.
-    def _Integrand4_(self):
+    def _integrand4_(self):
         I4xy_values = np.zeros(shape=(2, len(self.length)))
 
         fieldindex = self._get_fieldindex_()
@@ -189,7 +189,7 @@ class SynchrotronIntegral:
     
     # Integrand 5
     # Units: [m⁻¹]
-    def _Integrand5_(self):
+    def _integrand5_(self):
         I5xy_values = np.zeros(shape=(2, len(self.length)))
         H = self._H_function_()
             
@@ -208,7 +208,7 @@ class SynchrotronIntegral:
     # Call momentum_compaction()[0] for the x-value
     # and momentum_compaction()[1] for the y-value.
     def momentum_compaction(self):
-        I1 = np.sum(self._Integrand1_())
+        I1 = np.sum(self._integrand1_())
 
         return I1 / self.circum
 
@@ -219,7 +219,7 @@ class SynchrotronIntegral:
     # This means that for the total energy loss, we can simply sum the x- and y-integrals.
     # This amounts to summing all elements of _Integrand2_() together.
     def energy_loss(self):
-        I2 = np.sum(self._Integrand2_())
+        I2 = np.sum(self._integrand2_())
 
         return 2/3 * self.r_e * self.gamma0**3 * self.energy0 * I2
 
@@ -241,10 +241,10 @@ class SynchrotronIntegral:
     def radiation_damping_s(self):
         rad_damp_coefs = np.zeros(shape=(3,))
         
-        I2xy = np.sum(self._Integrand2_())
-        I4x  = np.sum(self._Integrand4_()[0])
-        I4y  = np.sum(self._Integrand4_()[1])
-        I4xy = np.sum(self._Integrand4_())
+        I2xy = np.sum(self._integrand2_())
+        I4x  = np.sum(self._integrand4_()[0])
+        I4y  = np.sum(self._integrand4_()[1])
+        I4xy = np.sum(self._integrand4_())
             
         rad_damp_coefs[0] = self.r_e/3 * self.gamma0**3 * clight/self.circum * (I2xy - I4x)
         rad_damp_coefs[1] = self.r_e/3 * self.gamma0**3 * clight/self.circum * (I2xy - I4y)
@@ -262,9 +262,9 @@ class SynchrotronIntegral:
     # RMS Energies
     # It is assumed that the RMS of the energies depends both on the x- and y-integrals.
     def rms_energies(self):
-        I2 = np.sum(self._Integrand2_())
-        I3 = np.sum(self._Integrand3_())
-        I4 = np.sum(self._Integrand4_())
+        I2 = np.sum(self._integrand2_())
+        I3 = np.sum(self._integrand3_())
+        I4 = np.sum(self._integrand4_())
 
         if I2 - I4 != 0:
             return 55/(32 * 3**(1/2)) * hbar / electron_volt * clight / self.mass0 * self.gamma0**2 * I3 / (2 * I2 - I4)    
@@ -279,11 +279,11 @@ class SynchrotronIntegral:
     def rms_betatron(self):
         rms_betatronxy = np.zeros(shape=(2,))
         
-        I2xy = np.sum(self._Integrand2_())
-        I4x  = np.sum(self._Integrand4_(), axis=1)[0]
-        I4y  = np.sum(self._Integrand4_(), axis=1)[1]
-        I5x  = np.sum(self._Integrand5_(), axis=1)[0]
-        I5y  = np.sum(self._Integrand5_(), axis=1)[1]
+        I2xy = np.sum(self._integrand2_())
+        I4x  = np.sum(self._integrand4_(), axis=1)[0]
+        I4y  = np.sum(self._integrand4_(), axis=1)[1]
+        I5x  = np.sum(self._integrand5_(), axis=1)[0]
+        I5y  = np.sum(self._integrand5_(), axis=1)[1]
 
         if I2xy - I4x != 0:
             rms_betatronxy[0] = 55/(32 * 3**(1/2)) * hbar / electron_volt * clight / self.mass0 * self.gamma0**2 * I5x / (I2xy - I4x)
