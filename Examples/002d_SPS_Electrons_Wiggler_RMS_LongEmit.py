@@ -1,6 +1,6 @@
-#import sys
-#import os
-#sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -16,7 +16,7 @@ from wiggler import wiggler
 # NOTE: There is a small discrepancy between the two angles as well.
 
 
-line = xt.Line.from_json('001_sps.json')
+line = xt.Line.from_json('Example_Data/001_sps.json')
 line.particle_ref = xt.Particles(energy0=20e9, mass0=xt.ELECTRON_MASS_EV)
 
 # Wiggler

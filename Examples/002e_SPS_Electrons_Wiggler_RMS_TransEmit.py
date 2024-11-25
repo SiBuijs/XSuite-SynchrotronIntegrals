@@ -1,6 +1,6 @@
-#import sys
-#import os
-#sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -19,7 +19,7 @@ from wiggler import wiggler
 # NOTE: y-direction: For low values of k_wig, the discrepancy between XSuite and Integrals becomes larger.
 
 
-line = xt.Line.from_json('001_sps.json')
+line = xt.Line.from_json('Example_Data/001_sps.json')
 line.particle_ref = xt.Particles(energy0=20e9, mass0=xt.ELECTRON_MASS_EV)
 
 # Wiggler
@@ -27,6 +27,7 @@ line.particle_ref = xt.Particles(energy0=20e9, mass0=xt.ELECTRON_MASS_EV)
 # Gets the position where we can place the wiggler.
 tt = line.get_table()
 s_start_wig = tt['s', 'actcsg.31780']
+print(f's_start_wig = {s_start_wig}')
 
 # Wiggler parameters
 k0_wig = 0.000001
@@ -34,10 +35,10 @@ angle = 0#np.pi/2
 
 k0_values = [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1]
 
-lenpole = 0.25
-numpoles = 16
+lenpole = 0.5
+numpoles = 8
 lenwig = lenpole * numpoles
-numperiods = 4
+numperiods = 2
 lambdawig = lenwig / numperiods
 rhowig = 1 / (k0_wig + 1e-9)
 kwig = 2*np.pi / lambdawig
@@ -99,7 +100,7 @@ for iter in range(iters):
     RMS_beta_xX0[iter] = tw_rad.eq_gemitt_x
     RMS_beta_xRelEr0[iter] = RMS_beta_xI0[iter]/RMS_beta_xX0[iter] - 1
 
-#tw_rad.plot('x y', 'dx dy')
+#tw_rad.plot('dx dy', 'dpx dpy')
 #plt.show()
 #print(line.get_table(attr=True).cols['name', 'element_type', 'k0l', 'rot_s_rad'].rows['mwp.*'])
 
@@ -141,9 +142,6 @@ for iter in range(iters):
     RMS_beta_xX90[iter] = tw_rad.eq_gemitt_x
     RMS_beta_xRelEr90[iter] = RMS_beta_xI90[iter]/RMS_beta_xX90[iter] - 1
 
-#tw_rad.plot('x y', 'dx dy')
-#plt.show()
-#print(line.get_table(attr=True).cols['name', 'element_type', 'k0l', 'rot_s_rad'].rows['mwp.*'])
 
 print(f'RMS_beta_xI = {RMS_beta_xI90} [s⁻¹]')
 print(f'RMS_beta_xX = {RMS_beta_xX90} [s⁻¹]')
@@ -165,7 +163,7 @@ line.configure_radiation(model='mean')
 
 tw_rad = line.twiss(strengths=True, eneloss_and_damping=True)
 
-#tw_rad.plot('x y', 'dx dy')
+#tw_rad.plot('dx dy', 'dpx dpy')
 #plt.show()
 
 #print(tw_rad.keys())
@@ -189,7 +187,7 @@ line.discard_tracker()
 # Plot momentum compaction
 # Create the plot
 RelErrs = plt.figure(figsize=(10, 6))
-
+varargs
 plt.plot(k0_values, RMS_beta_xRelEr90, label='RMS_beta_xRelEr90')
 plt.plot(k0_values, RMS_beta_xRelEr0, label='RMS_beta_xRelEr0')
 

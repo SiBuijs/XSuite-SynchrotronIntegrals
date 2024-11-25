@@ -1,12 +1,13 @@
-#import sys
-#import os
-#sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import xtrack as xt
 
 from synchrotron_integrals import SynchrotronIntegral as synint
 
-line = xt.Line.from_json('001_sps.json')
+
+line = xt.Line.from_json('Example_Data/001_sps.json')
 line.particle_ref = xt.Particles(energy0=20e9, mass0=xt.ELECTRON_MASS_EV)
 
 line.discard_tracker()
@@ -33,10 +34,9 @@ Integrals = synint(line)
 alpha_cI = Integrals.momentum_compaction()
 alpha_cX = tw_rad.momentum_compaction_factor
 print("\n-----------------------------------------------------------------------------------")
-print(f"Momentum Compaction Factors:\nalpha_cIx = {alpha_cI[0]} [-]")
-print(f"alpha_cIy = {alpha_cI[1]} [-]")
+print(f"Momentum Compaction Factors:\nalpha_cIx = {alpha_cI} [-]")
 print(f"alpha_xs = {alpha_cX} [-]\n")
-print(f"alpha_xs/alpha_cIx - 1 = {alpha_cI[0]/alpha_cX - 1:2e}")
+print(f"alpha_xs/alpha_cIx - 1 = {alpha_cI/alpha_cX - 1:2e}")
 
 # Energy loss
 # NOTE: CORRECT
