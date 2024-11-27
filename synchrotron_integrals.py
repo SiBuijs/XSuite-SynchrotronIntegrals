@@ -90,7 +90,7 @@ class SynchrotronIntegral:
     def _get_derivative_(self, yaxis, xaxis):
             derivative_values = np.zeros(shape=(len(self.length)))
 
-            derivative_values     = np.gradient(yaxis, xaxis)
+            derivative_values = np.gradient(yaxis, xaxis)
 
             derivative_values[np.isnan(derivative_values)] = 0
             
@@ -102,9 +102,10 @@ class SynchrotronIntegral:
         
         angle_rad = self.tw['angle_rad']
         rot_s_rad = self.tw['rot_s_rad']
+        mask = self.length != 0
 
-        h_xy[0, :] = np.sin(angle_rad) * np.cos(rot_s_rad)
-        h_xy[1, :] = np.sin(angle_rad) * np.sin(rot_s_rad)
+        h_xy[0, :][mask] = angle_rad[mask] * np.cos(rot_s_rad[mask]) / self.length[mask]
+        h_xy[1, :][mask] = angle_rad[mask] * np.sin(rot_s_rad[mask]) / self.length[mask]
 
         return h_xy
 
@@ -113,24 +114,25 @@ class SynchrotronIntegral:
     def _get_curvature_(self):
         k_xy = np.zeros(shape=(2, len(self.length)))
 
-        h_xy = self._orbit_curvature_()
+        x = self.tw['x']
+        y = self.tw['y']
+        s = self.tw['s']
         
-        vx = self._get_derivative_(self.tw['x'], self.tw['s'])
-        vy = self._get_derivative_(self.tw['y'], self.tw['s'])
-        vz = self._get_derivative_(self.tw['zeta'], self.tw['s'])
+        xprime = self._get_derivative_(x, s)
+        yprime = self._get_derivative_(y, s)
+        
+        xdoubleprime = self._get_derivative_(xprime, s)
+        ydoubleprime = self._get_derivative_(yprime, s)
 
-        ax = self._get_derivative_(vx, self.tw['s'])
-        ay = self._get_derivative_(vy, self.tw['s'])
-        az = self._get_derivative_(vz, self.tw['s'])
+        kappa_0xy = self._orbit_curvature_()
+        h = 1 + kappa_0xy[0, :] * x + kappa_0xy[1, :] * y
+        hprime = kappa_0xy[0, :] * xprime + kappa_0xy[1, :] * yprime
 
-        mask1 = vx**2 + vz**2 != 0
-        mask2 = vy**2 + vz**2 != 0
+        mask1 = xprime**2 + h**2 != 0
+        mask2 = yprime**2 + h**2 != 0
 
-        k_xy[0, :][mask1] = np.abs(vz * ay - vy * az)[mask1] / (clight**2 * (vx**2 + vz**2 + vy**2))[mask1]**(3/2)
-        k_xy[1, :][mask2] = np.abs(vz * ax - vx * az)[mask2] / (clight**2 * (vy**2 + vz**2 + vx**2))[mask2]**(3/2)
-
-        k_xy[0, :] -= h_xy[0, :]
-        k_xy[1, :] -= h_xy[1, :]
+        k_xy[0, :] = -(h * (xdoubleprime - h * kappa_0xy[0, :]) - 2 * hprime * xprime)[mask1] / (xprime**2 + h**2)[mask1]
+        k_xy[1, :] =  (h * (ydoubleprime - h * kappa_0xy[1, :]) - 2 * hprime * yprime)[mask2] / (yprime**2 + h**2)[mask2]
 
         return k_xy
 
