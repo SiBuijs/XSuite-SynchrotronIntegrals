@@ -208,6 +208,9 @@ print(f'U_0X90fit = {fitX90[0]}*k0_values**2 + {fitX90[1]}*k0_values + {fitX90[2
 U_0RelEr0fit = U_0I0fit/U_0X0fit - 1
 U_0RelEr90fit = U_0I90fit/U_0X90fit - 1
 
+print(f'kappa_x = {Integrals.kx[Integrals.kx != 0]} [m⁻¹]')
+print(f'kappa_y = {Integrals.ky[Integrals.ky != 0]} [m⁻¹]')
+
 # Plotting
 # -------------------------------------------------------------------------------------------------------------------------------
 # Create the plot

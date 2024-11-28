@@ -162,7 +162,6 @@ line.build_tracker()
 line.configure_radiation(model='mean')
 
 tw_rad = line.twiss(strengths=True, eneloss_and_damping=True)
-
 #tw_rad.plot('dx dy', 'dpx dpy')
 #plt.show()
 

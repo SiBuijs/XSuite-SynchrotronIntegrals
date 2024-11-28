@@ -1,28 +1,13 @@
 # RadiationIntegral Class
 # Works for both thick and thin elements
 # By Simon Fanica Buijsman
-# Date: 2024-09-24
+# Date: 2024-11-28
 # simon.fanica.buijsman@cern.ch
 
-# TODO: Investigate the effect of skew quadrupoles.
-# TODO: Correct the second order momentum dispersion.
-# TODO: Add the integrals for Wigglers from Wolski "The Accelerator Physics of Linear Collider Damping Rings", pages 22-24.
 
-# The RadiationIntegral class calculates various physical quantities using the radiation integrals.
-# The physical quantities it can calculate using public methods are:
-    # Momentum Compaction Factor (x and y)
-    # Energy Loss (scalar)
-    # Radiation Damping (x, y, and s)
-    # RMS Energies (scalar)
-    # RMS Displacement (x and y)
-    # Equilibrium Emittance (scalar)
-# Where possible, it calculates these quantities in the x- y- and s-directions.
-# In this case, the x-, y- and s-values are stored in arrays can be accesssed by the indices [0], [1], and [2] respectively.
-# The class is instantiated with a line object, which contains all the information about the elements, including the Twiss-Parameters.
-# The class has private methods that calculate the integrands and other quantities required for the calculation of the quantities mentioned above.
-# In order to keep the class relatively compact, the number of attributes is minimized as much as possible.
-# If a quantity, such as betx is only required in one method, it is calculated in that method.
-# Quantities that are used in multiple methods, such as the rest mass, it is stored as an attribute.
+# TODO: Check if the curvature is calculated correctly for off-momentum particles.
+# The current challenge is to see if this simulation is valid for particles that do not follow the design orbit.
+# So far, I've only tested the simulation for the design trajectory. In this case, the curvature is trivial.
 
 
 #### ---------------------------------------------------------------------------------------------------------------------------------
@@ -75,11 +60,13 @@ class SynchrotronIntegral:
         # Dispersions ----------------------------------------------------------------------------------------------------------------
         # x-direction
         self.dx   = self.tw['dx']                       # Dispersion in the x-direction
-        self.dxprime  = self.tw['dpx'] - self.tw['px']  # Derivative of the dispersion in the x-direction, w.r.t. s
+                                                        # Derivative of the dispersion in the x-direction, w.r.t. s
+        self.dxprime  = self.tw['dpx'] * (1 - self.tw['delta']) - self.tw['px']
 
         # y-direction
         self.dy   = self.tw['dy']                       # Dispersion in the y-direction
-        self.dyprime  = self.tw['dpy'] - self.tw['py']  # Derivative of the dispersion in the y-direction, w.r.t. s
+                                                        # Derivative of the dispersion in the y-direction, w.r.t. s
+        self.dyprime  = self.tw['dpy'] * (1 - self.tw['delta']) - self.tw['py']
 
 
     # Private methods ----------------------------------------------------------------------------------------------------------------
@@ -95,19 +82,21 @@ class SynchrotronIntegral:
             derivative_values[np.isnan(derivative_values)] = 0
             
             return derivative_values
-            
 
+
+    # Calculate the curvature of the design orbit.
     def _orbit_curvature_(self):
-        h_xy = np.zeros(shape=(2, len(self.length)))
+        kappa_xy = np.zeros(shape=(2, len(self.length)))
         
-        angle_rad = self.tw['angle_rad']
+        # TODO: I think the self.tw['k0l'] should be replaced with self.tw['angle_rad'].
+        angle_rad = self.tw['k0l']
         rot_s_rad = self.tw['rot_s_rad']
         mask = self.length != 0
 
-        h_xy[0, :][mask] = angle_rad[mask] * np.cos(rot_s_rad[mask]) / self.length[mask]
-        h_xy[1, :][mask] = angle_rad[mask] * np.sin(rot_s_rad[mask]) / self.length[mask]
+        kappa_xy[0, :][mask] = angle_rad[mask] * np.cos(rot_s_rad[mask]) / self.length[mask]
+        kappa_xy[1, :][mask] = angle_rad[mask] * np.sin(rot_s_rad[mask]) / self.length[mask]
 
-        return h_xy
+        return kappa_xy
 
 
    # Calculate the curvature of the design orbit.
@@ -131,10 +120,11 @@ class SynchrotronIntegral:
         mask1 = xprime**2 + h**2 != 0
         mask2 = yprime**2 + h**2 != 0
 
-        k_xy[0, :] = -(h * (xdoubleprime - h * kappa_0xy[0, :]) - 2 * hprime * xprime)[mask1] / (xprime**2 + h**2)[mask1]
-        k_xy[1, :] =  (h * (ydoubleprime - h * kappa_0xy[1, :]) - 2 * hprime * yprime)[mask2] / (yprime**2 + h**2)[mask2]
+        k_xy[0, :] = -(h * (xdoubleprime - h * kappa_0xy[0, :]) - 2 * hprime * xprime)[mask1] / (xprime**2 + h**2)[mask1]**(3/2)
+        k_xy[1, :] =  (h * (ydoubleprime - h * kappa_0xy[1, :]) - 2 * hprime * yprime)[mask2] / (yprime**2 + h**2)[mask2]**(3/2)
 
         return k_xy
+
 
     # For the field index
     def _get_fieldindex_(self):
@@ -360,3 +350,23 @@ class SynchrotronIntegral:
         rms_E_conv_factor = self.T_0 * self.energy0 / p_0 * (alpha_cI * self.energy0 / (2*np.pi * harmonic * V_cav_tot * np.cos(phi_s)))**(1/2)
 
         return rms_E_conv_factor * self.rms_energies()
+    
+    # NOTE: TEMPORARY
+    def rms_E_conv_factor(self):
+        tab = self.line.get_table(attr = True)
+        V_cav = tab.rows[tab.element_type == 'Cavity']['voltage']
+        f_cav = tab.rows[tab.element_type == 'Cavity']['frequency']
+
+        # self.line.attr['voltage'][mask]
+        # self.line.attr['frequency'][mask]
+
+        V_cav_tot = np.sum(V_cav)                           # The voltage of all cavities. See the TODO.
+        f_cav = np.sum(f_cav[V_cav != 0])                   # The frequency of the cavity.
+        p_0 = self.line.particle_ref.p0c[0] / clight        # The [0] index is to convert this to a scalar instead of a (1, ) array.
+        harmonic = f_cav * self.T_0                         # The harmonic number is the ratio of the cavity frequency to the revolution frequency.
+        phi_s = 0                                           # The synchronous phase is assumed to be 0. See the TODO.
+        alpha_cI = self.momentum_compaction()               # The momentum compaction factor is assumed to be the x-value. See the TODO.
+
+        rms_E_conv_factor = self.T_0 * self.energy0 / p_0 * (alpha_cI * self.energy0 / (2*np.pi * harmonic * V_cav_tot * np.cos(phi_s)))**(1/2)
+
+        return rms_E_conv_factor

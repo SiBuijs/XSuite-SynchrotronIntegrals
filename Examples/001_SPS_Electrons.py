@@ -6,6 +6,9 @@ import xtrack as xt
 
 from synchrotron_integrals import SynchrotronIntegral as synint
 
+import numpy as np
+
+from scipy.constants import c as clight
 
 line = xt.Line.from_json('Example_Data/001_sps.json')
 line.particle_ref = xt.Particles(energy0=20e9, mass0=xt.ELECTRON_MASS_EV)
@@ -104,5 +107,3 @@ print(f"rms_betatronIx = {rms_betatronIx} [-]")
 print(f"rms_betatronIy = {rms_betatronIy} [-]")
 print(f"rms_betatronX = {rms_betatronX} [-]\n")
 print(f"rms_betatronIx/rms_betatronX - 1 = {rms_betatronIx/rms_betatronX - 1:2e}")
-
-print()
