@@ -37,7 +37,7 @@ class SynchrotronIntegral:
         # The class only needs a line object to be instantiated.
         # The line object contains all the information about the elements, including the Twiss.
         self.line = line
-        self.tw = line.twiss(method='6d', strengths=True, eneloss_and_damping=True)
+        self.tw = line.twiss(method='4d', strengths=True)#, eneloss_and_damping=True)
 
 
         # Properties of the particle -------------------------------------------------------------------------------------------------
@@ -350,23 +350,3 @@ class SynchrotronIntegral:
         rms_E_conv_factor = self.T_0 * self.energy0 / p_0 * (alpha_cI * self.energy0 / (2*np.pi * harmonic * V_cav_tot * np.cos(phi_s)))**(1/2)
 
         return rms_E_conv_factor * self.rms_energies()
-    
-    # NOTE: TEMPORARY
-    def rms_E_conv_factor(self):
-        tab = self.line.get_table(attr = True)
-        V_cav = tab.rows[tab.element_type == 'Cavity']['voltage']
-        f_cav = tab.rows[tab.element_type == 'Cavity']['frequency']
-
-        # self.line.attr['voltage'][mask]
-        # self.line.attr['frequency'][mask]
-
-        V_cav_tot = np.sum(V_cav)                           # The voltage of all cavities. See the TODO.
-        f_cav = np.sum(f_cav[V_cav != 0])                   # The frequency of the cavity.
-        p_0 = self.line.particle_ref.p0c[0] / clight        # The [0] index is to convert this to a scalar instead of a (1, ) array.
-        harmonic = f_cav * self.T_0                         # The harmonic number is the ratio of the cavity frequency to the revolution frequency.
-        phi_s = 0                                           # The synchronous phase is assumed to be 0. See the TODO.
-        alpha_cI = self.momentum_compaction()               # The momentum compaction factor is assumed to be the x-value. See the TODO.
-
-        rms_E_conv_factor = self.T_0 * self.energy0 / p_0 * (alpha_cI * self.energy0 / (2*np.pi * harmonic * V_cav_tot * np.cos(phi_s)))**(1/2)
-
-        return rms_E_conv_factor
