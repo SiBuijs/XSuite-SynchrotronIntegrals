@@ -63,9 +63,9 @@ line.insert_element('maincav03', at_s=s_start_maincavity + 1, element=xt.Cavity(
 line.insert_element('maincav04', at_s=s_start_maincavity + 1.5, element=xt.Cavity(frequency=cavfreq, voltage=cavvolt))
 
 # Find the start of the secondary cavities
-s_start_long09 = tab['s', 'ars09_gmrk_0000']
-print(f's_start_long09 = {s_start_long09} [m]')
-s_start_3rdcavity = s_start_long09 + 1
+#s_start_long09 = tab['s', 'ars09_gmrk_0000']
+#print(f's_start_long09 = {s_start_long09} [m]')
+#s_start_3rdcavity = s_start_long09 + 1
 
 # Insert secondary cavities.
 #line.insert_element('3rdcav01', at_s=s_start_3rdcavity, element=xt.Cavity(frequency=1498.95e6, voltage=1e6))

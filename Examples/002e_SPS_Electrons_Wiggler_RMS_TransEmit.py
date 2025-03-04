@@ -33,7 +33,7 @@ print(f's_start_wig = {s_start_wig}')
 k0_wig = 0.000001
 angle = 0#np.pi/2
 
-k0_values = [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1]
+k0_values = [5e-4]
 
 lenpole = 0.5
 numpoles = 8
@@ -73,9 +73,9 @@ line.slice_thick_elements(slicing_strategies)
 # -------------------------------------------------------------------------------------------------------------------------------
 # Momentum Compaction Factor for Angle = 0 rad.
 iters = len(k0_values)
-RMS_beta_xI0 = np.zeros(iters)
-RMS_beta_xX0 = np.zeros(iters)
-RMS_beta_xRelEr0 = np.zeros(iters)
+RMS_beta_yI0 = np.zeros(iters)
+RMS_beta_yX0 = np.zeros(iters)
+RMS_beta_yRelEr0 = np.zeros(iters)
 
 print(f'RMS Longitudinal Emittance for angle = {angle} [rad]:')
 for iter in range(iters):
@@ -96,25 +96,25 @@ for iter in range(iters):
 
     Integrals = synint(line)
 
-    RMS_beta_xI0[iter] = Integrals.rms_betatron()[0]
-    RMS_beta_xX0[iter] = tw_rad.eq_gemitt_x
-    RMS_beta_xRelEr0[iter] = RMS_beta_xI0[iter]/RMS_beta_xX0[iter] - 1
+    RMS_beta_yI0[iter] = Integrals.rms_betatron()[1]
+    RMS_beta_yX0[iter] = tw_rad.eq_gemitt_y
+    RMS_beta_yRelEr0[iter] = RMS_beta_yI0[iter]/RMS_beta_yX0[iter] - 1
 
 #tw_rad.plot('dx dy', 'dpx dpy')
 #plt.show()
 #print(line.get_table(attr=True).cols['name', 'element_type', 'k0l', 'rot_s_rad'].rows['mwp.*'])
 
-print(f'RMS_beta_xI = {RMS_beta_xI0} [s⁻¹]')
-print(f'RMS_beta_xX = {RMS_beta_xX0} [s⁻¹]')
-print(f'Relative Error = {RMS_beta_xRelEr0}')
+print(f'RMS_beta_yI = {RMS_beta_yI0} [s⁻¹]')
+print(f'RMS_beta_yX = {RMS_beta_yX0} [s⁻¹]')
+print(f'Relative Error = {RMS_beta_yRelEr0}')
 
 # -------------------------------------------------------------------------------------------------------------------------------
 # Momentum Compaction Factor for Angle = pi/2 rad.
 angle = np.pi/2
 
-RMS_beta_xI90 = np.zeros(iters)
-RMS_beta_xX90 = np.zeros(iters)
-RMS_beta_xRelEr90 = np.zeros(iters)
+RMS_beta_yI90 = np.zeros(iters)
+RMS_beta_yX90 = np.zeros(iters)
+RMS_beta_yRelEr90 = np.zeros(iters)
 
 for number in range(len(Chicane)):
         line[list(Chicane.keys())[number]].rot_s_rad = angle
@@ -138,99 +138,66 @@ for iter in range(iters):
 
     Integrals = synint(line)
 
-    RMS_beta_xI90[iter] = Integrals.rms_betatron()[0]
-    RMS_beta_xX90[iter] = tw_rad.eq_gemitt_x
-    RMS_beta_xRelEr90[iter] = RMS_beta_xI90[iter]/RMS_beta_xX90[iter] - 1
+    RMS_beta_yI90[iter] = Integrals.rms_betatron()[1]
+    RMS_beta_yX90[iter] = tw_rad.eq_gemitt_y
+    RMS_beta_yRelEr90[iter] = RMS_beta_yI90[iter]/RMS_beta_yX90[iter] - 1
 
 
-print(f'RMS_beta_xI = {RMS_beta_xI90} [s⁻¹]')
-print(f'RMS_beta_xX = {RMS_beta_xX90} [s⁻¹]')
-print(f'Relative Error = {RMS_beta_xRelEr90}')
-
-
-# -------------------------------------------------------------------------------------------------------------------------------
-# Baseline: k_wig = 0
-print(f'RMS Longitudinal Emittance for k_wig = 0 [m⁻¹]:')
-line.discard_tracker()
-for number in range(len(Chicane)):
-    line[list(Chicane.keys())[number]].k0 = 0
-    
-print(f'k0 = {line[list(Chicane.keys())[0]].k0} [m⁻¹]')
-    
-line.build_tracker()
-
-line.configure_radiation(model='mean')
-
-tw_rad = line.twiss(strengths=True, eneloss_and_damping=True)
-#tw_rad.plot('dx dy', 'dpx dpy')
-#plt.show()
-
-#print(tw_rad.keys())
-
-# Compute radiation integrals
-Integrals = synint(line)
-
-RMS_beta_xIbase = Integrals.rms_betatron()[0]
-RMS_beta_xXbase = tw_rad.eq_gemitt_x
-RMS_beta_xRelErbase = RMS_beta_xIbase/RMS_beta_xXbase - 1
-
-print(f'RMS_beta_xI = {RMS_beta_xIbase} [s⁻¹]')
-print(f'RMS_beta_xX = {RMS_beta_xXbase} [s⁻¹]')
-print(f'Relative Error = {RMS_beta_xRelErbase}')
-
-line.discard_tracker()
+print(f'RMS_beta_yI = {RMS_beta_yI90} [s⁻¹]')
+print(f'RMS_beta_yX = {RMS_beta_yX90} [s⁻¹]')
+print(f'Relative Error = {RMS_beta_yRelEr90}')
 
 
 # Plotting
 # -------------------------------------------------------------------------------------------------------------------------------
 # Plot momentum compaction
 # Create the plot
-RelErrs = plt.figure(figsize=(10, 6))
-plt.plot(k0_values, RMS_beta_xRelEr90, label='RMS_beta_xRelEr90')
-plt.plot(k0_values, RMS_beta_xRelEr0, label='RMS_beta_xRelEr0')
+#RelErrs = plt.figure(figsize=(10, 6))
+#plt.plot(k0_values, RMS_beta_yRelEr90, label='RMS_beta_yRelEr90')
+#plt.plot(k0_values, RMS_beta_yRelEr0, label='RMS_beta_yRelEr0')
 
-plt.axhline(y=RMS_beta_xRelErbase, color='gray', linestyle='--', linewidth=1, label='No Chicane')
+#plt.axhline(y=RMS_beta_yRelErbase, color='gray', linestyle='--', linewidth=1, label='No Chicane')
 
 # Set x-axis to logarithmic scale
-plt.xscale('log')
-plt.yscale('log')
-plt.xlim(1e-5, 1e-1)  # Set the limits for the x-axis
+#plt.xscale('log')
+#plt.yscale('log')
+#plt.xlim(1e-5, 1e-1)  # Set the limits for the x-axis
 
 # Add labels and legend
-plt.xlabel('k_wig [m⁻¹]')
-plt.ylabel('RMS_beta_x Relative Errors')
-plt.legend(loc='best')  # Automatically place the legend in an optimal location
-plt.title('Relative Errors in the RMS Betatron Oscillations')
+#plt.xlabel('k_wig [m⁻¹]')
+#plt.ylabel('RMS_beta_y Relative Errors')
+#plt.legend(loc='best')  # Automatically place the legend in an optimal location
+#plt.title('Relative Errors in the RMS Betatron Oscillations')
 
-plt.show()
-RelErrs.savefig("Figures/RMS_beta_xRelErrs.pdf", bbox_inches='tight')
+#plt.show()
+#RelErrs.savefig("Figures/RMS_beta_yRelErrs.pdf", bbox_inches='tight')
 
 # Plot relative errors
 # Create the plot
-Values = plt.figure(figsize=(10, 6))
+#Values = plt.figure(figsize=(10, 6))
 
 # Plot the first set of data
-plt.plot(k0_values, RMS_beta_xI0, label='RMS_beta_xI0')
-plt.plot(k0_values, RMS_beta_xX0, label='RMS_beta_xX0')
+#plt.plot(k0_values, RMS_beta_yI0, label='RMS_beta_yI0')
+#plt.plot(k0_values, RMS_beta_yX0, label='RMS_beta_yX0')
 
 # Plot the second set of data
-plt.plot(k0_values, RMS_beta_xI90, label='RMS_beta_xI90')
-plt.plot(k0_values, RMS_beta_xX90, label='RMS_beta_xX90')
+#plt.plot(k0_values, RMS_beta_yI90, label='RMS_beta_yI90')
+#plt.plot(k0_values, RMS_beta_yX90, label='RMS_beta_yX90')
 
-plt.axhline(y=RMS_beta_xIbase, color='gray', linestyle='--', linewidth=1, label='Integral, No Chicane')
-plt.axhline(y=RMS_beta_xXbase, color='black', linestyle='--', linewidth=1, label='XSuite, No Chicane')
+#plt.axhline(y=RMS_beta_yIbase, color='gray', linestyle='--', linewidth=1, label='Integral, No Chicane')
+#plt.axhline(y=RMS_beta_yXbase, color='black', linestyle='--', linewidth=1, label='XSuite, No Chicane')
 
 # Set x-axis to logarithmic scale
-plt.xscale('log')
-plt.yscale('log')
-plt.xlim(1e-5, 1e-1)  # Set the limits for the x-axis
+#plt.xscale('log')
+#plt.yscale('log')
+#plt.xlim(1e-5, 1e-1)  # Set the limits for the x-axis
 
 # Add labels and legend
-plt.xlabel('k_wig [m⁻¹]')
-plt.ylabel('RMS_beta_x [-]')
-plt.legend(loc='best')  # Automatically place the legend in an optimal location
-plt.title('RMS Betatron Oscillations for Two Angles')
+#plt.xlabel('k_wig [m⁻¹]')
+#plt.ylabel('RMS_beta_y [-]')
+#plt.legend(loc='best')  # Automatically place the legend in an optimal location
+#plt.title('RMS Betatron Oscillations for Two Angles')
 
 # Show the plot
-plt.show()
-Values.savefig("Figures/RMS_beta_xValues.pdf", bbox_inches='tight')
+#plt.show()
+#Values.savefig("Figures/RMS_beta_yValues.pdf", bbox_inches='tight')
