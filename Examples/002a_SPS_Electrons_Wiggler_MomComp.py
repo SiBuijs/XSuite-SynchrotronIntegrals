@@ -12,7 +12,16 @@ from wiggler import wiggler
 
 line = xt.Line.from_json('Example_Data/001_sps.json')
 line.particle_ref = xt.Particles(energy0=20e9, mass0=xt.ELECTRON_MASS_EV)
+#NOTE: Momentum Compaction independent of presence of wiggler.
+#For Horizontal Wiggler
+#alpha_cI = [0.00310351 0.00310351 0.00310351 0.00310351 0.00310351]
+#alpha_cX = [0.00311896 0.00311896 0.00311896 0.00311896 0.0031183 ]
+#Relative Error = [0.00495487 0.00495482 0.00495467 0.00495398 0.00474459]
 
+#For Vertical Wiggler
+#alpha_cI = [0.00310351 0.00310351 0.00310351 0.00310351 0.00310351]
+#alpha_cX = [0.00311896 0.00311896 0.00311896 0.00311896 0.0031183 ]
+#Relative Error = [0.00495488 0.00495479 0.00495467 0.00495396 0.00474461]
 
 # Notes from figures:
 # NOTE: The momentum compaction factor as calculated using the integral method is independent on the strength of the wiggler.

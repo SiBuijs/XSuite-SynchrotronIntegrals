@@ -31,7 +31,7 @@ from scipy.constants import c as clight
 # I thought they might be important in beam correction later on, that is why I kept them.
 #
 # TODO: Ask Simona and Michael about the above.
-line = xt.Line.from_json('Example_Data/b075_2024.09.25.json')
+line = xt.Line.from_json('../Example_Data/b075_2024.09.25.json')
 line.particle_ref = xt.Particles(q0 = -1, mass0 = xt.ELECTRON_MASS_EV, kinetic_energy0=2.7e9)
 
 
@@ -57,10 +57,7 @@ print(f's_start_long05 = {s_start_long05} [m]')
 s_start_maincavity = s_start_long05 + 1
 
 # Insert main cavities.
-line.insert_element('maincav01', at_s=s_start_maincavity, element=xt.Cavity(frequency=cavfreq, voltage=cavvolt))
-line.insert_element('maincav02', at_s=s_start_maincavity + 0.5, element=xt.Cavity(frequency=cavfreq, voltage=cavvolt))
-line.insert_element('maincav03', at_s=s_start_maincavity + 1, element=xt.Cavity(frequency=cavfreq, voltage=cavvolt))
-line.insert_element('maincav04', at_s=s_start_maincavity + 1.5, element=xt.Cavity(frequency=cavfreq, voltage=cavvolt))
+line.insert_element('maincav01', at_s=s_start_maincavity, element=xt.Cavity(frequency=cavfreq, voltage=4*cavvolt, lag=180))
 
 # Find the start of the secondary cavities
 #s_start_long09 = tab['s', 'ars09_gmrk_0000']
@@ -70,18 +67,17 @@ line.insert_element('maincav04', at_s=s_start_maincavity + 1.5, element=xt.Cavit
 # Insert secondary cavities.
 #line.insert_element('3rdcav01', at_s=s_start_3rdcavity, element=xt.Cavity(frequency=1498.95e6, voltage=1e6))
 
-#slicing_strategies = [
-#    xt.Strategy(slicing=xt.Teapot(8)),  # Default
-#    xt.Strategy(slicing=xt.Teapot(2), element_type=xt.Bend),
-#    xt.Strategy(slicing=xt.Teapot(8), element_type=xt.Quadrupole),
-#    xt.Strategy(slicing=xt.Teapot(8), element_type=xt.Multipole),
-#]
-#line.slice_thick_elements(slicing_strategies)
-
+slicing_strategies = [
+    xt.Strategy(slicing=xt.Teapot(8)),  # Default
+    xt.Strategy(slicing=xt.Teapot(2), element_type=xt.Bend),
+    xt.Strategy(slicing=xt.Teapot(8), element_type=xt.Quadrupole),
+    xt.Strategy(slicing=xt.Teapot(8), element_type=xt.Multipole),
+]
+line.slice_thick_elements(slicing_strategies)
 
 # Build the tracker.
-#line.build_tracker(_context=xo.ContextCpu())
-#line.configure_radiation(model='mean')
+line.build_tracker(_context=xo.ContextCpu())
+line.configure_radiation(model='mean')
 
 
 # Tracking ------------------------------------------------------------------------------------------------------------------------------------------
@@ -126,7 +122,7 @@ plt.show()
 # Survey the line and draw a FloorPlot.
 # Commented this out, because I don't need it every time.
 # Feel free to uncomment it if you want to see the floor plan.
-import xplt
+
 sv = line.survey()
 xplt.FloorPlot(sv, line)
 plt.legend(fontsize='small', loc='upper left')
@@ -144,21 +140,22 @@ plt.show()
 # NOTE: CORRECT
 alpha_cI = Integrals.momentum_compaction()
 alpha_cX = tw.momentum_compaction_factor
+alpha_cTDR = 1.05e-4
 print("\n-----------------------------------------------------------------------------------")
 print(f"Momentum Compaction Factors:\nalpha_cIx = {alpha_cI} [-]")
 print(f"alpha_xs = {alpha_cX} [-]\n")
-print(f"alpha_CDRp17 = {1.05e-4} [-]\n")
+print(f"alpha_CDRp17 = {alpha_cTDR} [-]\n")
 print(f"alpha_xs/alpha_cIx - 1 = {alpha_cI/alpha_cX - 1:2e}")
 
 # Energy loss
 # NOTE: CORRECT
 U_0I = Integrals.energy_loss()
 U_0X = tw.eneloss_turn
-
+U_0TDR = 688e3
 print("\n-----------------------------------------------------------------------------------")
 print(f"Energy Loss:\nU_0I = {U_0I} [eV]")
 print(f"U_0X = {U_0X} [eV]\n")
-print(f"U_0TDRp17 = {688e3} [eV]\n")
+print(f"U_0TDRp17 = {U_0TDR} [eV]\n")
 print(f"U_0I/U_0X - 1 = {U_0I/U_0X - 1:2e}")
 
 # Radiation damping [s⁻¹]
@@ -171,6 +168,10 @@ alpha_xXs = tw.damping_constants_s[0]
 alpha_yXs = tw.damping_constants_s[1]
 alpha_sXs = tw.damping_constants_s[2]
 
+alpha_xTDR = 1/4.2e-3
+alpha_yTDR = 1/7.8e-3
+alpha_sTDR = 1/6.8e-3
+
 RelErr_xs = alpha_xIs/alpha_xXs - 1
 RelErr_ys = alpha_yIs/alpha_yXs - 1
 RelErr_ss = alpha_sIs/alpha_sXs - 1
@@ -178,7 +179,7 @@ RelErr_ss = alpha_sIs/alpha_sXs - 1
 print("\n-----------------------------------------------------------------------------------")
 print(f"Radiation Damping (Integral Method):\nalpha_x = {alpha_xIs} [s⁻¹]\nalpha_y = {alpha_yIs} [s⁻¹]\nalpha_s = {alpha_sIs} [s⁻¹]\n")
 print(f"Radiation Damping (XSuite Method):\nalpha_x = {alpha_xXs} [s⁻¹]\nalpha_y = {alpha_yXs} [s⁻¹]\nalpha_s = {alpha_sXs} [s⁻¹]\n")
-print(f"Radiation Damping (TDRp23):\nalpha_x = {4.2e-3} [s⁻¹]\nalpha_y = {7.8e-3} [s⁻¹]\nalpha_s = {6.8e-3} [s⁻¹]\n")
+print(f"Radiation Damping (TDRp23):\nalpha_x = {alpha_xTDR} [s⁻¹]\nalpha_y = {alpha_yTDR} [s⁻¹]\nalpha_s = {alpha_sTDR} [s⁻¹]\n")
 print(f"Relative Errors:\nalpha_xI/alpha_xX - 1 = {RelErr_xs:2e}\nalpha_xI/alpha_xX - 1 = {RelErr_ys:2e}\nalpha_sI/alpha_sX - 1 = {RelErr_ss:2e}\n")
 
 # Radiation damping [turns⁻¹]
@@ -196,29 +197,35 @@ RelErr_yt = alpha_yIt/alpha_yXt - 1
 RelErr_st = alpha_sIt/alpha_sXt - 1
 
 print("\n-----------------------------------------------------------------------------------")
-print(f"Radiation Damping (Integral Method):\nalpha_x = {alpha_xIt} [s⁻¹]\nalpha_y = {alpha_yIt} [s⁻¹]\nalpha_s = {alpha_sIt} [turns⁻¹]\n")
-print(f"Radiation Damping (XSuite Method):\nalpha_x = {alpha_xXt} [s⁻¹]\nalpha_y = {alpha_yXt} [s⁻¹]\nalpha_s = {alpha_sXt} [turns⁻¹]\n")
+print(f"Radiation Damping (Integral Method):\nalpha_x = {alpha_xIt} [turns⁻¹]\nalpha_y = {alpha_yIt} [turns⁻¹]\nalpha_s = {alpha_sIt} [turns⁻¹]\n")
+print(f"Radiation Damping (XSuite Method):\nalpha_x = {alpha_xXt} [turns⁻¹]\nalpha_y = {alpha_yXt} [turns⁻¹]\nalpha_s = {alpha_sXt} [turns⁻¹]\n")
+print(f"Radiation Damping (TDRp23):\nalpha_x = {alpha_xTDR*tw['T_rev0']} [turns⁻¹]\nalpha_y = {alpha_yTDR*tw['T_rev0']} [turns⁻¹]\nalpha_s = {alpha_sTDR*tw['T_rev0']} [turns⁻¹]\n")
 print(f"Relative Errors:\nalpha_xI/alpha_xX - 1 = {RelErr_xt:2e}\nalpha_xI/alpha_xX - 1 = {RelErr_yt:2e}\nalpha_sI/alpha_sX - 1 = {RelErr_st:2e}\n")
+
 
 # Quantum excitation in the longitudinal direction
 eq_emittanceI = Integrals.equilibrium_emittance()
 eq_emittanceX = tw.eq_gemitt_zeta
+eq_emittanceTDR = 1.103e-3
 print("\n-----------------------------------------------------------------------------------")
 print(f"eq_emittanceI = {eq_emittanceI} [m]")
 print(f"eq_emittanceX = {eq_emittanceX} [m]\n")
-print(f"eq_emittanceTDRp23 = {1.103e-3} [m]\n")
+print(f"eq_emittanceTDRp23 = {eq_emittanceTDR} [m]\n")
 print(f"eq_emittanceI/eq_emittanceX - 1 = {eq_emittanceI/eq_emittanceX - 1:2e}")
 
 # Quantum excitation in the radial direction
 # NOTE: CORRECT
 rms_betatronIx = Integrals.rms_betatron()[0]
 rms_betatronIy = Integrals.rms_betatron()[1]
-rms_betatronX = tw.eq_gemitt_x
+rms_betatronXx = tw.eq_gemitt_x
+rms_betatronXy = tw.eq_gemitt_y
 print("\n-----------------------------------------------------------------------------------")
 print(f"rms_betatronIx = {rms_betatronIx} [-]")
 print(f"rms_betatronIy = {rms_betatronIy} [-]")
-print(f"rms_betatronX = {rms_betatronX} [-]\n")
-print(f"rms_betatronIx/rms_betatronX - 1 = {rms_betatronIx/rms_betatronX - 1:2e}")
+print(f"rms_betatronX = {rms_betatronXx} [-]")
+print(f"rms_betatronXy = {rms_betatronXy} [-]\n")
+print(f"rms_betatronIx/rms_betatronX - 1 = {rms_betatronIx/rms_betatronXx - 1:2e}")
+print(f"rms_betatronIy/rms_betatronY - 1 = {rms_betatronIy/rms_betatronXy - 1:2e}")
 
 # This is here so I can place a debug break point at the end, so that I can still test some things.
 print('Done')

@@ -10,8 +10,11 @@ import xtrack as xt
 from synchrotron_integrals import SynchrotronIntegral as synint
 from wiggler import wiggler
 
-line = xt.Line.from_json('Example_Data/001_sps.json')
+line = xt.Line.from_json('../Example_Data/001_sps.json')
 line.particle_ref = xt.Particles(energy0=20e9, mass0=xt.ELECTRON_MASS_EV)
+
+# TODO: Check which bending radii come from the reference orbit and which come from the particle orbit.
+
 
 # Wiggler
 # ----------------------------------------------------------------------------------------------------------------------------------------------
@@ -23,7 +26,7 @@ s_start_wig = tt['s', 'actcsg.31780']
 k0_wig = 0.000001
 angle = 0#np.pi/2
 
-k0_values =np.array([1e-5, 1e-4, 1e-3, 1e-2, 1e-1]) #np.array([1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1])
+k0_values = np.array([1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2])
 
 lenpole = 0.25
 numpoles = 16
@@ -86,11 +89,13 @@ for iter in range(iters):
 
     Integrals = synint(line)
 
+    #print(f"Integrals kmag = {Integrals.kmag[Integrals.kmag != 0]} [m⁻¹]")
+
     U_0I0[iter] = Integrals.energy_loss()
     U_0X0[iter] = tw_rad.eneloss_turn
     U_0RelEr0[iter] = np.abs(U_0I0[iter]/U_0X0[iter] - 1)
 
-#tw_rad.plot('x y', 'dx dy')
+#tw_rad.plot('x y', 'px py')
 #plt.show()
 #print(line.get_table(attr=True).cols['name', 'element_type', 'k0l', 'rot_s_rad'].rows['mwp.*'])
 
@@ -132,9 +137,16 @@ for iter in range(iters):
     U_0X90[iter] = tw_rad.eneloss_turn
     U_0RelEr90[iter] = np.abs(U_0I90[iter]/U_0X90[iter] - 1)
 
-#tw_rad.plot('x y', 'dx dy')
-#plt.show()
-#print(line.get_table(attr=True).cols['name', 'element_type', 'k0l', 'rot_s_rad'].rows['mwp.*'])
+tw_rad.plot('y', 'py')
+plt.show()
+# print(tw_rad.cols['s length py'].rows['mwp.*'])
+# arraypy = np.array(tw_rad.rows['mwp.*']['py'])
+# arrays = np.array(tw_rad.rows['mwp.*']['length'])
+
+#print(arraypy)
+#print(arrays)
+#np.savetxt('py.txt', arraypy, fmt='%f')
+#np.savetxt('length.txt', arrays, fmt='%f')
 
 print(f'U_0I = {U_0I90} [eV]')
 print(f'U_0X = {U_0X90} [eV]')
@@ -187,8 +199,8 @@ line.discard_tracker()
 # Fit for horizontal wiggler
 fitI0 = np.polyfit(k0_values, U_0I0, 2)
 fitX0 = np.polyfit(k0_values, U_0X0, 2)
-U_0I0fit = fitI0[0]*k0_values**2 + fitI0[1]*k0_values + fitI0[2]
-U_0X0fit = fitX0[0]*k0_values**2 + fitX0[1]*k0_values + fitX0[2]
+#U_0I0fit = fitI0[0]*k0_values**2 + fitI0[1] * k0_values + fitI0[2]
+#U_0X0fit = fitX0[0]*k0_values**2 + fitX0[1] * k0_values + fitX0[2]
 
 # Print the formulas
 print(f'U_0I0fit = {fitI0[0]}*k0_values**2 + {fitI0[1]}*k0_values + {fitI0[2]}')
@@ -197,19 +209,18 @@ print(f'U_0X0fit = {fitX0[0]}*k0_values**2 + {fitX0[1]}*k0_values + {fitX0[2]}')
 # Fit for vertical wiggler
 fitI90 = np.polyfit(k0_values, U_0I90, 2)
 fitX90 = np.polyfit(k0_values, U_0X90, 2)
-U_0I90fit = fitI90[0]*k0_values**2 + fitI90[1]*k0_values + fitI90[2]
-U_0X90fit = fitX90[0]*k0_values**2 + fitX90[1]*k0_values + fitX90[2]
+#U_0I90fit = fitI90[0]*k0_values**2 + fitI90[1]*k0_values + fitI90[2]
+#U_0X90fit = fitX90[0]*k0_values**2 + fitX90[1]*k0_values + fitX90[2]
 
 # Print the formulas
 print(f'U_0I90fit = {fitI90[0]}*k0_values**2 + {fitI90[1]}*k0_values + {fitI90[2]}')
 print(f'U_0X90fit = {fitX90[0]}*k0_values**2 + {fitX90[1]}*k0_values + {fitX90[2]}')
 
 # Relative errors
-U_0RelEr0fit = U_0I0fit/U_0X0fit - 1
-U_0RelEr90fit = U_0I90fit/U_0X90fit - 1
+#U_0RelEr0fit = U_0I0fit/U_0X0fit - 1
+#U_0RelEr90fit = U_0I90fit/U_0X90fit - 1
 
-print(f'kappa_x = {Integrals.kx[Integrals.kx != 0]} [m⁻¹]')
-print(f'kappa_y = {Integrals.ky[Integrals.ky != 0]} [m⁻¹]')
+print(f'kappa_x = {Integrals.k[Integrals.k != 0]} [m⁻¹]')
 
 # Plotting
 # -------------------------------------------------------------------------------------------------------------------------------
@@ -220,8 +231,8 @@ plt.loglog(k0_values, U_0RelEr90, label='U_0RelEr90')
 plt.loglog(k0_values, U_0RelEr0, label='U_0RelEr0')
 
 # Plot the fits
-plt.loglog(k0_values, U_0RelEr0fit, label='Fit U_0RelEr0')
-plt.loglog(k0_values, U_0RelEr90fit, label='Fit U_0RelEr90')
+#plt.loglog(k0_values, U_0RelEr0fit, label='Fit U_0RelEr0')
+#plt.loglog(k0_values, U_0RelEr90fit, label='Fit U_0RelEr90')
 
 plt.axhline(y=U_0RelErbase, color='gray', linestyle='--', linewidth=1, label='No Chicane')
 
@@ -252,10 +263,10 @@ plt.loglog(k0_values, U_0I90, label='U_0I90')
 plt.loglog(k0_values, U_0X90, label='U_0X90')
 
 # Plot the fits
-plt.loglog(k0_values, U_0I0fit, label='Fit U_0I0')
-plt.loglog(k0_values, U_0X0fit, label='Fit U_0X0')
-plt.loglog(k0_values, U_0I90fit, label='Fit U_0I90')
-plt.loglog(k0_values, U_0X90fit, label='Fit U_0X90')
+#plt.loglog(k0_values, U_0I0fit, label='Fit U_0I0')
+#plt.loglog(k0_values, U_0X0fit, label='Fit U_0X0')
+#plt.loglog(k0_values, U_0I90fit, label='Fit U_0I90')
+#plt.loglog(k0_values, U_0X90fit, label='Fit U_0X90')
 
 plt.axhline(y=U_0Ibase, color='gray', linestyle='--', linewidth=1, label='Integral, No Chicane')
 plt.axhline(y=U_0Xbase, color='black', linestyle='--', linewidth=1, label='XSuite, No Chicane')

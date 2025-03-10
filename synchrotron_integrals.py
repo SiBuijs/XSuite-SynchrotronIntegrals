@@ -53,9 +53,19 @@ class SynchrotronIntegral:
         self.circum = self.tw['circumference']          # The circumference of the ring
         self.T_0 = self.tw['T_rev0']                    # The revolution period of the beam.
 
-        # Curvatures for each elementwant
-        self.kx = self._get_curvature_()[0]             # The integrated normal curvature of each element
-        self.ky = self._get_curvature_()[1]             # The integrated skew curvature of each element
+        # Particle coordinates
+        self.x = self.tw['x']                           # The x-coordinate of the particle
+        self.y = self.tw['y']                           # The y-coordinate of the particle
+        self.s = self.tw['s']                           # The s-coordinate of the particle
+
+        self.px = self.tw['px']                         # The x-momentum of the particle
+        self.py = self.tw['py']                         # The y-momentum of the particle
+
+        # Curvatures for each element
+        self.k = self._get_curvature_()                 # The curvature of each element
+        self.kmag = np.linalg.norm(self.k, axis=1)      # The magnitude of the curvature of each element
+        #self.kx = self._get_curvature_()[0]             # The integrated normal curvature of each element
+        #self.ky = self._get_curvature_()[1]             # The integrated skew curvature of each element
 
         # Dispersions ----------------------------------------------------------------------------------------------------------------
         # x-direction
@@ -74,12 +84,20 @@ class SynchrotronIntegral:
 
 
     # This function calculates the horizontal and vertical acceleration of the particle.
-    def _get_derivative_(self, yaxis, xaxis):
+    def _get_derivative_(self, yaxis):
             derivative_values = np.zeros(shape=(len(self.length)))
+            dx = np.zeros(shape=(len(self.length)))
+            dx[:-1] = self.length[1:] + self.length[0:-1]
+            dx[-1] = self.length[0] + self.length[-1]
 
-            derivative_values = np.gradient(yaxis, xaxis)
+            derivative_values[1:-1] = yaxis[2:] - yaxis[0:-2]
+            derivative_values[0] = yaxis[1] - yaxis[-1]
+            derivative_values[-1] = yaxis[0] - yaxis[-2]
 
-            derivative_values[np.isnan(derivative_values)] = 0
+
+            #derivative_values = np.gradient(yaxis)
+            mask = dx != 0
+            derivative_values[mask] = derivative_values[mask] / dx[mask]
             
             return derivative_values
 
@@ -89,7 +107,7 @@ class SynchrotronIntegral:
         kappa_xy = np.zeros(shape=(2, len(self.length)))
         
         # TODO: I think the self.tw['k0l'] should be replaced with self.tw['angle_rad'].
-        angle_rad = self.tw['k0l']
+        angle_rad = self.tw['angle_rad']
         rot_s_rad = self.tw['rot_s_rad']
         mask = self.length != 0
 
@@ -101,42 +119,51 @@ class SynchrotronIntegral:
 
    # Calculate the curvature of the design orbit.
     def _get_curvature_(self):
-        k_xy = np.zeros(shape=(2, len(self.length)))
-
-        x = self.tw['x']
-        y = self.tw['y']
-        s = self.tw['s']
+        kxy = np.zeros(shape=(len(self.length), 3))
         
-        xprime = self._get_derivative_(x, s)
-        yprime = self._get_derivative_(y, s)
+        #self._get_derivative_(self.x, self.s)
+        #self._get_derivative_(self.y, self.s)
         
-        xdoubleprime = self._get_derivative_(xprime, s)
-        ydoubleprime = self._get_derivative_(yprime, s)
+        pxprime = self._get_derivative_(self.px)
+        pyprime = self._get_derivative_(self.py)
 
         kappa_0xy = self._orbit_curvature_()
-        h = 1 + kappa_0xy[0, :] * x + kappa_0xy[1, :] * y
-        hprime = kappa_0xy[0, :] * xprime + kappa_0xy[1, :] * yprime
+        h = 1 + kappa_0xy[0, :] * self.x + kappa_0xy[1, :] * self.y
+        hprime = kappa_0xy[0, :] * self.px + kappa_0xy[1, :] * self.py
 
-        mask1 = xprime**2 + h**2 != 0
-        mask2 = yprime**2 + h**2 != 0
+        #kxy[:, 0] = - (h * (pxprime - h * kappa_0xy[0, :]) - 2 * self.px * (kappa_0xy[0, :] * self.px + kappa_0xy[1, :] * self.py)) / (self.px**2 + h**2)**(3/2)
+        #kxy[:, 1] =   (h * (pyprime - h * kappa_0xy[1, :]) - 2 * self.py * (kappa_0xy[0, :] * self.px + kappa_0xy[1, :] * self.py)) / (self.py**2 + h**2)**(3/2)
 
-        k_xy[0, :] = -(h * (xdoubleprime - h * kappa_0xy[0, :]) - 2 * hprime * xprime)[mask1] / (xprime**2 + h**2)[mask1]**(3/2)
-        k_xy[1, :] =  (h * (ydoubleprime - h * kappa_0xy[1, :]) - 2 * hprime * yprime)[mask2] / (yprime**2 + h**2)[mask2]**(3/2)
+        rprime = np.stack([self.px, self.py, h], axis=1)  # Shape (N, 3)
+        rdoubleprime = np.stack([pxprime - h*kappa_0xy[0, :], pyprime - h * kappa_0xy[1, :], 2*hprime], axis=1)  # Shape (N, 3)
 
-        return k_xy
+        #cross_products = np.cross(rprime, rdoubleprime)
+
+        magnitudesvelocities = np.linalg.norm(rprime, axis=1).reshape(-1, 1)
+
+        mask = (magnitudesvelocities != 0).reshape(-1, )
+
+        kxy[mask] = rdoubleprime[mask] / magnitudesvelocities[mask]**2
+
+        return kxy
 
 
     # For the field index
+    # NOTE: Finally works. The radius in the field index is the radius of curvature of the design orbit, not of the particle orbit.
     def _get_fieldindex_(self):
         # The integrated normal and skew quadrupole strengths of each element
         quadkn = self.tw['k1l']            # The integrated normal quadrupole strength of each element
-        #quadks = self.tw['k1sl']           # The integrated skew quadrupole strength of each element
+        #quadks = self.tw['k1sl']          # The integrated skew quadrupole strength of each element
 
-        fieldindex = np.zeros(shape=(2, len(self.kx)))
-        mask = self.length * self.kx != 0
-            
-        fieldindex[0, :][mask] = -quadkn[mask] / (self.length * self.kx)[mask]**2
-        fieldindex[1, :][mask] = -quadkn[mask] / (self.length * self.kx)[mask]**2
+        reforbitkappax = self._orbit_curvature_()[0]
+        reforbitkappay = self._orbit_curvature_()[1]
+
+
+        fieldindex = np.zeros(shape=(2, len(self.length)))
+        mask = self.length * self.kmag * reforbitkappax != 0
+        fieldindex[0, :][mask] = - quadkn[mask] / (self.length[mask] * self.kmag[mask] * reforbitkappax[mask])
+        mask = self.length * self.kmag * reforbitkappay != 0
+        fieldindex[1, :][mask] = - quadkn[mask] / (self.length[mask] * self.kmag[mask] * reforbitkappay[mask])
             
         return fieldindex
 
@@ -168,11 +195,15 @@ class SynchrotronIntegral:
     # Units: [m]
     # Returns an array of shape (2, number of elements)
     # The two rows correspond to the x- and y-values respectively.
+    # NOTE: Don't know why the minus sign is there.
     def _integrand1_(self):
-        I1xy_values = np.zeros(shape=(2, len(self.length)))
+        I1xy_values = np.zeros(shape=len(self.length))
 
-        I1xy_values[0, :] = self.kx * self.length * self.dx
-        I1xy_values[1, :] = self.ky * self.length * self.dy
+        disp = -np.stack([self.dx, self.dy, np.zeros(shape=len(self.dx))], axis=1)
+
+        dot_product = np.sum(disp * self.k, axis=1)
+
+        I1xy_values = dot_product * self.length
 
         return I1xy_values
         
@@ -180,21 +211,19 @@ class SynchrotronIntegral:
     # Integrand 2
     # Units: [m⁻¹]
     def _integrand2_(self):
-        I2xy_values = np.zeros(shape=(2, len(self.length)))
+        I2_values = np.zeros(shape=len(self.length))
 
-        I2xy_values[0, :] = self.length * self.kx**2
-        I2xy_values[1, :] = self.length * self.ky**2
+        I2_values = self.length * self.kmag**2
         
-        return I2xy_values
+        return I2_values
 
 
     # Integrand 3
     # Units: [m⁻²]
     def _integrand3_(self):
-        I3xy_values = np.zeros(shape=(2, len(self.length)))
+        I3xy_values = np.zeros(shape=len(self.length))
 
-        I3xy_values[0, :] = self.length * np.abs(self.kx)**3
-        I3xy_values[1, :] = self.length * np.abs(self.ky)**3
+        I3xy_values = self.length * self.kmag**3
 
         return I3xy_values
             
@@ -203,13 +232,19 @@ class SynchrotronIntegral:
     # Units: [m⁻¹]
     # Returns an array of shape (2, number of elements)
     # The two rows correspond to the x- and y-values respectively.
+    # NOTE: I am going to mess up the field index here, so if it doesn't work, change that back first!
     def _integrand4_(self):
         I4xy_values = np.zeros(shape=(2, len(self.length)))
 
+
         fieldindex = self._get_fieldindex_()
-        
-        I4xy_values[0, :] = self.length * self.kx**3 * self.dx * (1 - 2 * fieldindex[0])
-        I4xy_values[1, :] = self.length * self.ky**3 * self.dy * (1 - 2 * fieldindex[1])
+        disp = -np.stack([self.dx, self.dy, np.zeros(shape=len(self.dx))], axis=1)
+        dot_product = np.sum(disp * self.k, axis=1)
+
+        I1xy_values = dot_product * self.length
+
+        I4xy_values[0, :] = self.length * self.kmag**3 * self.dx * (1 - 2 * fieldindex[0])
+        I4xy_values[1, :] = self.length * self.kmag**3 * self.dy * (1 - 2 * fieldindex[1])
 
         return I4xy_values
         
@@ -220,8 +255,8 @@ class SynchrotronIntegral:
         I5xy_values = np.zeros(shape=(2, len(self.length)))
         H = self._H_function_()
             
-        I5xy_values[0, :] = self.length * np.abs(self.kx)**3 * H[0, :]
-        I5xy_values[1, :] = self.length * np.abs(self.ky)**3 * H[1, :]
+        I5xy_values[0, :] = self.length * self.kmag**3 * H[0, :]
+        I5xy_values[1, :] = self.length * self.kmag**3 * H[1, :]
             
         return I5xy_values
 
@@ -293,8 +328,8 @@ class SynchrotronIntegral:
         I3 = np.sum(self._integrand3_())
         I4 = np.sum(self._integrand4_())
 
-        if I2 - I4 != 0:
-            return 55/(32 * 3**(1/2)) * hbar / electron_volt * clight / self.mass0 * self.gamma0**2 * I3 / (2 * I2 - I4)    
+        if 2 * I2 + I4 != 0:
+            return 55/(32 * 3**(1/2)) * hbar / electron_volt * clight / self.mass0 * self.gamma0**2 * I3 / (2 * I2 + I4)
         
         else:
             raise ValueError("The denominator of the RMS energy, 2I2 - I4 = 0. The RMS energy is not defined.")
@@ -325,27 +360,24 @@ class SynchrotronIntegral:
     # This quantity is derived from the RMS Energy.
     # See Hoffmann Section 14.3.2 for more information about the equation used here.
     # TODO: Find out how we can correctly implement the effect of phi_s.
-        # In the JSON file, phi_s = 180 deg. This value can be used if we replace cos(phi_s) with -cos(phi_s). But is that true in general?
-    # TODO: Find out how we can correctly implement the effect of the momentum compaction factor.
-        # Do we need to sum both x- and y-values?
-    # TODO: Investigate the effect of having multiple cavities.
-        # Do we need to simply sum the voltages?
-        # What if there are different cavities with different frequencies?
+        # Above transition, we must have phi_s = 180°, but this gives a negative cosine and thus an imaginary number.
+        # I put it to zero for now, but there is something to be done here.
     # TODO: Is creating this large table not a bit too much for such a small function?
     def equilibrium_emittance(self):
         tab = self.line.get_table(attr = True)
         V_cav = tab.rows[tab.element_type == 'Cavity']['voltage']
         f_cav = tab.rows[tab.element_type == 'Cavity']['frequency']
+        lag_cav = 0#tab.rows[tab.element_type == 'Cavity']['lag']
 
         # self.line.attr['voltage'][mask]
         # self.line.attr['frequency'][mask]
 
         V_cav_tot = np.sum(V_cav)                           # The voltage of all cavities. See the TODO.
-        f_cav = np.sum(f_cav[V_cav != 0])                   # The frequency of the cavity.
+        f_cav = np.average(f_cav[V_cav != 0])               # The frequency of the cavity.
         p_0 = self.line.particle_ref.p0c[0] / clight        # The [0] index is to convert this to a scalar instead of a (1, ) array.
         harmonic = f_cav * self.T_0                         # The harmonic number is the ratio of the cavity frequency to the revolution frequency.
-        phi_s = 0                                           # The synchronous phase is assumed to be 0. See the TODO.
-        alpha_cI = self.momentum_compaction()               # The momentum compaction factor is assumed to be the x-value. See the TODO.
+        phi_s = lag_cav                                     # The synchronous phase is assumed to be 0. See the TODO.
+        alpha_cI = self.momentum_compaction()               # The momentum compaction factor.
 
         rms_E_conv_factor = self.T_0 * self.energy0 / p_0 * (alpha_cI * self.energy0 / (2*np.pi * harmonic * V_cav_tot * np.cos(phi_s)))**(1/2)
 

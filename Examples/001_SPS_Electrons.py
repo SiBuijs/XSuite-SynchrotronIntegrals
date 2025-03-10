@@ -25,7 +25,7 @@ tw_no_rad = line.twiss(strengths=True)
 
 line.configure_radiation(model='mean')
 
-tw_rad = line.twiss(strengths=True, eneloss_and_damping=True)
+tw_rad = line.twiss(method='6d', strengths=True, eneloss_and_damping=True, radiation_integrals=True)
 
 print(tw_rad.keys())
 
@@ -53,9 +53,9 @@ print(f"U_0I/U_0X - 1 = {U_0I/U_0X - 1:2e}")
 
 # Radiation damping [s⁻¹]
 # NOTE: CORRECT
-alpha_xIs = Integrals.radiation_damping_s()[0]
-alpha_yIs = Integrals.radiation_damping_s()[1]
-alpha_sIs = Integrals.radiation_damping_s()[2]
+alpha_xIs = tw_rad.rad_int_damping_constant_x_s
+alpha_yIs = tw_rad.rad_int_damping_constant_y_s
+alpha_sIs = tw_rad.rad_int_damping_constant_zeta_s
 
 alpha_xXs = tw_rad.damping_constants_s[0]
 alpha_yXs = tw_rad.damping_constants_s[1]
@@ -99,11 +99,14 @@ print(f"eq_emittanceI/eq_emittanceX - 1 = {eq_emittanceI/eq_emittanceX - 1:2e}")
 
 # Quantum excitation in the radial direction
 # NOTE: CORRECT
-rms_betatronIx = Integrals.rms_betatron()[0]
-rms_betatronIy = Integrals.rms_betatron()[1]
-rms_betatronX = tw_rad.eq_gemitt_x
+rms_betatronIx = tw_rad.rad_int_eq_gemitt_x
+rms_betatronIy = tw_rad.rad_int_eq_gemitt_y
+rms_betatronXx = tw_rad.eq_gemitt_x
+rms_betatronXy = tw_rad.eq_gemitt_y
 print("\n-----------------------------------------------------------------------------------")
 print(f"rms_betatronIx = {rms_betatronIx} [-]")
 print(f"rms_betatronIy = {rms_betatronIy} [-]")
-print(f"rms_betatronX = {rms_betatronX} [-]\n")
-print(f"rms_betatronIx/rms_betatronX - 1 = {rms_betatronIx/rms_betatronX - 1:2e}")
+print(f"rms_betatronXx = {rms_betatronXx} [-]")
+print(f"rms_betatronXy = {rms_betatronXy} [-]\n")
+print(f"rms_betatronIx/rms_betatronX - 1 = {rms_betatronIx/rms_betatronXx - 1:2e}")
+print(f"rms_betatronIy/rms_betatronY - 1 = {rms_betatronIy/rms_betatronXy - 1:2e}")
